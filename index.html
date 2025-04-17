@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тадбирлар Виджети</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f0f0;
+    }
+    .widget {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .event {
+      margin: 10px 0;
+      padding: 10px;
+      border-left: 4px solid #007bff;
+      background: #f8f9fa;
+    }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #28a745;
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      display: none;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <div class="widget">
+    <h2>Келгуси Тадбирлар</h2>
+    <div id="events"></div>
+  </div>
+  <div id="notification" class="notification"></div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbzVHDL3-wRT27onrOXEbpm46WD1zhEU-n3BMlgKHj5t5JZQQKt6LfGT-4GhAx7u3qUK/exec"; // Google Apps Script URL ни бу ерга қўйинг
+
+    // Маълумотларни олиш
+    async function fetchEvents() {
+      const response = await fetch(API_URL);
+      const events = await response.json();
+      return events;
+    }
+
+    // Тадбирларни кўрсатиш
+    function displayEvents(events) {
+      const eventsDiv = document.getElementById("events");
+      eventsDiv.innerHTML = "";
+      events.forEach(event => {
+        const eventDiv = document.createElement("div");
+        eventDiv.className = "event";
+        eventDiv.innerHTML = `<strong>${event.name}</strong><br>
+                              Сана: ${event.date}<br>
+                              Тавсиф: ${event.description}`;
+        eventsDiv.appendChild(eventDiv);
+      });
+    }
+
+    // Эслатма кўрсатиш
+    function showNotification(message) {
+      const notification = document.getElementById("notification");
+      notification.innerHTML = message;
+      notification.style.display = "block";
+      setTimeout(() => {
+        notification.style.display = "none";
+      }, 5000);
+    }
+
+    // Тадбирларни текшириш
+    async function checkEvents() {
+      const events = await fetchEvents();
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+
+      const todayStr = today.toISOString().split("T")[0];
+      const tomorrowStr = tomorrow.toISOString().split("T")[0];
+
+      events.forEach(event => {
+        if (event.date === todayStr) {
+          showNotification(`Бугун тадбир: ${event.name} - ${event.description}`);
+        } else if (event.date === tomorrowStr) {
+          showNotification(`Эртага тадбир: ${event.name} - ${event.description}`);
+        }
+      });
+
+      displayEvents(events);
+    }
+
+    // Браузер эслатмалари учун рухсат сўраш
+    function requestNotificationPermission() {
+      if (Notification.permission !== "granted") {
+        Notification.requestPermission();
+      }
+    }
+
+    // Ҳар 24 соатда текшириш
+    checkEvents();
+    setInterval(checkEvents, 24 * 60 * 60 * 1000);
+
+    // Браузер эслатмалари
+    requestNotificationPermission();
+  </script>
+</body>
+</html>
